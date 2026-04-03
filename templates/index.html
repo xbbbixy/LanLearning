@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多语言句法分析与对齐学习平台</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>多语言句法分析与对齐学习平台</h1>
+            <p class="subtitle">输入中文句子，探索不同语言的句法结构</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="input-card">
+                <textarea id="sentence-input" placeholder="例如：我喜欢吃苹果。"></textarea>
+                <div class="controls">
+                    <div class="lang-selector">
+                        <label for="target-lang">选择目标语言:</label>
+                        <select id="target-lang">
+                            <option value="ja">日语</option>
+                            <option value="fr">法语</option>
+                            <option value="de">德语</option>
+                        </select>
+                    </div>
+                    <button id="analyze-btn">
+                        <span class="btn-text">分析句子</span>
+                        <span class="spinner-border hidden"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="loading" class="loading-indicator hidden">
+                <div class="spinner"></div>
+                <p>正在处理中，请稍候...</p>
+            </div>
+
+            <div id="error-message" class="error-box hidden"></div>
+
+            <div id="result-section" class="results-grid">
+                <!-- Analysis results will be dynamically inserted here -->
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 - 多语言句法分析与对齐学习平台</p>
+        </div>
+    </footer>
+
+    <div id="word-popup" class="word-popup hidden"></div>
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
