@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loading = document.getElementById('loading');
     const errorMessage = document.getElementById('error-message');
     const wordPopup = document.getElementById('word-popup');
+    const wordPopupContent = wordPopup.querySelector('.word-popup-content');
+    const popupCloseBtn = wordPopup.querySelector('.close-btn');
 
     const roleColors = {
         'ROOT': '#f44336', 'nsubj': '#2196F3', 'dobj': '#4CAF50', 'iobj': '#00BCD4',
@@ -143,6 +145,13 @@ document.addEventListener('DOMContentLoaded', () => {
     resultSection.addEventListener('click', async (event) => {
         const wordSpan = event.target.closest('.word');
         if (wordSpan) {
+            // --- Click Feedback ---
+            const currentActive = resultSection.querySelector('.word-active');
+            if (currentActive) {
+                currentActive.classList.remove('word-active');
+            }
+            wordSpan.classList.add('word-active');
+
             const word = wordSpan.textContent;
             const sentenceContent = wordSpan.closest('.sentence-content');
 
@@ -220,7 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
             detailsFound = true;
             html += '<h5>例句:</h5><ul>';
             data.examples.forEach(ex => {
-                html += `<li>${ex}</li>`;
+                // Highlight the word in the example
+                const regex = new RegExp(`(${data.word})`, 'gi');
+                const highlightedExample = ex.replace(regex, '<strong>$1</strong>');
+                html += `<li>${highlightedExample}</li>`;
             });
             html += '</ul>';
         }
@@ -234,16 +246,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showPopup(content, targetElement) {
-        wordPopup.innerHTML = content;
+        wordPopupContent.innerHTML = content;
         wordPopup.classList.remove('hidden');
+
         const rect = targetElement.getBoundingClientRect();
-        wordPopup.style.left = `${rect.left}px`;
-        wordPopup.style.top = `${rect.bottom + window.scrollY}px`;
+        const popupRect = wordPopup.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+
+        let left = rect.left + (rect.width / 2) - (popupRect.width / 2);
+        let top = rect.bottom + window.scrollY + 10; // 10px gap
+
+        // Adjust if it goes off-screen
+        if (left < 10) {
+            left = 10;
+        }
+        if ((left + popupRect.width) > (viewportWidth - 10)) {
+            left = viewportWidth - popupRect.width - 10;
+        }
+
+        wordPopup.style.left = `${left}px`;
+        wordPopup.style.top = `${top}px`;
     }
+
+    function hidePopup() {
+        wordPopup.classList.add('hidden');
+    }
+
+    popupCloseBtn.addEventListener('click', hidePopup);
 
     document.addEventListener('click', (event) => {
         if (!wordPopup.classList.contains('hidden') && !wordPopup.contains(event.target) && !event.target.closest('.word')) {
-            wordPopup.classList.add('hidden');
+            hidePopup();
         }
     });
 });

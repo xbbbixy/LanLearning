@@ -94,6 +94,7 @@ def parse_sentence(text: str, lang: str = 'en') -> list:
             
         final_roles.append({
             "word": word.text, 
+            "lemma": word.lemma,
             "role": role_en, 
             "role_zh": role_zh
         })

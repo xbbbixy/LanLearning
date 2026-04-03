@@ -60,12 +60,11 @@ def get_word_definition(request):
     word = request.GET.get('word')
     sentence = request.GET.get('sentence')
     lang = request.GET.get('lang', 'en')
-    target_lang = request.GET.get('target_lang', 'ja') # e.g., 'ja', 'fr'
+    target_lang = request.GET.get('target_lang', 'ja')
 
     if not word:
         return JsonResponse({'error': 'Word is required'}, status=400)
 
-    # --- Initialize response data ---
     response_data = {
         'word': word,
         'part_of_speech': None,
@@ -77,7 +76,6 @@ def get_word_definition(request):
         'translation_zh': None,
     }
 
-    # --- Perform translations based on the source language ---
     try:
         if lang == 'zh':
             response_data['translation_en'] = ts.translate_text(word, translator='bing', from_language='zh', to_language='en')
@@ -87,32 +85,52 @@ def get_word_definition(request):
     except Exception as e:
         print(f"Translation in popup failed: {e}")
 
-    # --- Get part of speech in context ---
+    word_to_lookup = word
     if sentence:
         try:
             analysis = parser.parse_sentence(sentence, lang=lang)
             for word_info in analysis:
                 if word_info['word'].lower() == word.lower():
                     response_data['part_of_speech'] = word_info.get('role_zh', word_info.get('role'))
+                    word_to_lookup = word_info.get('lemma', word)
                     break
         except Exception as e:
             print(f"Stanza parsing failed: {e}")
 
-    # --- Get dictionary definition (only for English words) ---
-    if lang == 'en':
+    supported_dictionary_langs = ['en', 'ja', 'fr', 'de']
+    if lang in supported_dictionary_langs:
+        # --- New: Implement a two-step fallback for dictionary lookup ---
+        # 1. First, try to look up the word's lemma (e.g., 'geben')
+        # 2. If that fails, fall back to the original word (e.g., 'Geben')
+        
+        api_data = None
         try:
-            api_response = requests.get(f'https://api.dictionaryapi.dev/api/v2/entries/en/{word}')
-            if api_response.status_code == 200:
-                api_data = api_response.json()[0]
-                response_data['phonetic'] = api_data.get('phonetic', '')
+            # Attempt 1: Look up the lemma
+            primary_response = requests.get(f'https://api.dictionaryapi.dev/api/v2/entries/{lang}/{word_to_lookup}')
+            if primary_response.status_code == 200:
+                api_data = primary_response.json()[0]
+            else:
+                # Attempt 2: Fallback to the original word if lemma fails
+                secondary_response = requests.get(f'https://api.dictionaryapi.dev/api/v2/entries/{lang}/{word}')
+                if secondary_response.status_code == 200:
+                    api_data = secondary_response.json()[0]
+
+            if api_data:
+                phonetics = api_data.get('phonetics', [])
+                if phonetics and phonetics[0].get('text'):
+                    response_data['phonetic'] = phonetics[0]['text']
+                else:
+                    response_data['phonetic'] = api_data.get('phonetic', '')
+
                 for meaning in api_data.get('meanings', []):
                     for definition in meaning.get('definitions', []):
                         if definition.get('definition'):
                             response_data['definitions'].append(definition['definition'])
                         if definition.get('example'):
                             response_data['examples'].append(definition['example'])
+                            
         except Exception as e:
-            print(f"Dictionary API call failed: {e}")
+            print(f"Dictionary API call failed for '{word_to_lookup}' or '{word}': {e}")
 
     return JsonResponse(response_data)
 
